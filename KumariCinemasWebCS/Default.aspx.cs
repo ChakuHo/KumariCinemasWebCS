@@ -60,8 +60,7 @@ FROM (
            b.ShowID,
            TO_CHAR(s.ShowDate,'YYYY-MM-DD') AS ShowDate,
            s.ShowTime,
-           b.BookingStatus,
-           b.BookingTime
+           b.BookingStatus
     FROM BOOKING b
     JOIN CUSTOMER c ON c.CustomerID = b.CustomerID
     JOIN SHOWTIME s ON s.ShowID = b.ShowID

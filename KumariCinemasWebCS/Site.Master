@@ -73,3 +73,10 @@
     </form>
 </body>
 </html>
+<style>
+    /* Dashboard stability like no left right*/
+    .kc-fixed-card { min-height: 420px; }
+    .kc-chart-wrap { height: 320px; }
+    .kc-chart-wrap canvas { width: 100% !important; height: 320px !important; }
+</style>
+

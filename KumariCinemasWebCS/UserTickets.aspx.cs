@@ -11,18 +11,31 @@ namespace KumariCinemasWebCS
         {
             lblMsg.Text = "";
             if (!IsPostBack)
-                BindCustomers();
+                BindCustomers(null);
         }
 
-        private void BindCustomers()
+        private void BindCustomers(string keyword)
         {
+            string sql = @"
+SELECT CustomerID,
+       CustomerID || ' - ' || Username || ' (' || Email || ')' AS DisplayText
+FROM CUSTOMER";
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+                sql += " WHERE LOWER(Email) LIKE :pK OR LOWER(Username) LIKE :pK";
+
+            sql += " ORDER BY CustomerID";
+
             using (var conn = Db.GetConn())
-            using (var cmd = new OracleCommand(
-                "SELECT CustomerID, CustomerID || ' - ' || Username AS DisplayText FROM CUSTOMER ORDER BY CustomerID", conn))
+            using (var cmd = new OracleCommand(sql, conn))
             using (var da = new OracleDataAdapter(cmd))
             {
+                if (!string.IsNullOrWhiteSpace(keyword))
+                    cmd.Parameters.Add(":pK", OracleDbType.Varchar2).Value = "%" + keyword.Trim().ToLower() + "%";
+
                 var dt = new DataTable();
                 da.Fill(dt);
+
                 ddlCustomer.DataSource = dt;
                 ddlCustomer.DataTextField = "DisplayText";
                 ddlCustomer.DataValueField = "CustomerID";
@@ -30,12 +43,26 @@ namespace KumariCinemasWebCS
             }
         }
 
+        protected void btnFind_Click(object sender, EventArgs e)
+        {
+            BindCustomers(txtFind.Text);
+            lblMsg.Text = (ddlCustomer.Items.Count == 0) ? "No customers matched the search." : "";
+        }
+
         protected void btnSearch_Click(object sender, EventArgs e)
         {
+            if (ddlCustomer.Items.Count == 0)
+            {
+                lblMsg.Text = "No customer selected.";
+                gv.DataSource = null;
+                gv.DataBind();
+                return;
+            }
+
             int customerId = int.Parse(ddlCustomer.SelectedValue);
 
             string sql = @"
-SELECT c.CustomerID, c.Username,
+SELECT c.CustomerID, c.Username, c.Email,
        tk.TicketID, tk.SeatNumber, tk.TicketStatus,
        b.BookingTime,
        s.ShowID, TO_CHAR(s.ShowDate,'YYYY-MM-DD') AS ShowDate, s.ShowTime,
@@ -68,8 +95,7 @@ ORDER BY b.BookingTime DESC";
                 gv.DataSource = dt;
                 gv.DataBind();
 
-                if (dt.Rows.Count == 0)
-                    lblMsg.Text = "No PAID tickets found for the last 6 months.";
+                lblMsg.Text = (dt.Rows.Count == 0) ? "No PAID tickets found for the last 6 months." : "";
             }
         }
     }
